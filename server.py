@@ -1,16 +1,17 @@
 import os
 import socket 
+import pickle
 from Crypto.Cipher import AES
-from Crypto.Util import number
 from Crypto.Hash import SHA256
 
 host='localhost'
 port=5000
 x=os.urandom(16)
-p=number.getPrime(256)
 h1=SHA256.new()
 h2=SHA256.new()
 h2_dash=SHA256.new()
+
+reg_table={}
 
 def encrypt(msg):
 	iv=os.urandom(16)
@@ -19,10 +20,12 @@ def encrypt(msg):
 	return ct
 
 class SmartCard:
-	def __init__(self,did,v0):
+	def __init__(self,did=None,v0=None,ctr_sc=0,n=0):
 		self.did=did
 		self.v0=v0
-
+		self.ctr_sc=ctr_sc
+		self.n=n
+	
 class Server:
 	def __init__(self):
 		pass
@@ -44,8 +47,10 @@ class Server:
 			tmp2.append(id[i]|x[i])	
 		h1.update(bytes(tmp2))
 		v0=bytearray(h1.digest())
-		sc=SmartCard(did,v0)
-		return sc
+		id=tuple(id)
+		reg_table[id]=[ci,0]
+		id=bytearray(id)
+		return (did,v0)
 
 if __name__=="__main__":
 	server=Server()
@@ -55,7 +60,8 @@ if __name__=="__main__":
 	conn,addr=sock.accept()
 	id_u=conn.recv(1024)
 	id_u=bytearray(id_u)
-	sc=server.register(id_u)
-	conn.send(sc)
+	(did,v0)=server.register(id_u)
+	sc=SmartCard(did,v0)
+	conn.send(pickle.dumps(sc))
 	conn.close()
 	sock.close()

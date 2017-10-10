@@ -52,6 +52,20 @@ class Server:
 		id=bytearray(id)
 		return (did,v0)
 
+	def login(self):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		sock.bind((host,port))
+		sock.listen(1)
+		conn,addr=sock.accept()
+		v1=conn.recv(16)
+		did=conn.recv(16)
+		t1=conn.recv(16)
+		conn.close()
+		sock.close()
+		print(v1)
+		print(did)
+		print(t1)	
+		
 if __name__=="__main__":
 	server=Server()
 	sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -65,3 +79,4 @@ if __name__=="__main__":
 	conn.send(pickle.dumps(sc))
 	conn.close()
 	sock.close()
+	server.login()

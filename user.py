@@ -14,7 +14,7 @@ h2=SHA256.new()
 h2_dash=SHA256.new()
 
 class SmartCard:
-	def __init__(self,did=None,v0=None,ctr_sc=0,n=0):
+	def __init__(self,did=None,v0=None,ctr_sc=0,n=3):
 		self.did=did
 		self.v0=v0
 		self.ctr_sc=ctr_sc
@@ -75,10 +75,22 @@ class User:
 			sock.send(v1)
 			sock.send(sc.did)
 			sock.send(t1)
+			sock.send(g)
 			sock.close()
-			print(v1)
-			print(sc.did)
-			print(t1)
+			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			sock.bind((server,port))
+			sock.listen(1)
+			conn,addr=sock.accept()
+			v2=conn.recv(16)
+			v3=conn.recv(32)
+			d=conn.recv(16)
+			t2=conn.recv(16)
+			conn.close()
+			sock.close()
+			v2=bytearray(v2)
+			v3=bytearray(v3)
+			d=bytearray(d)
+			t2=bytearray(t2)	
 
 if __name__=="__main__":
 	user=User()

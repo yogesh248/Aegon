@@ -60,7 +60,7 @@ class Server:
 		id=tuple(id)
 		reg_table[id]=[ci,0]
 		id=bytearray(id)
-		return (did,v0,tmp1,id)
+		return (did,v0,tmp1,id,id_s)
 
 	def authenticate(self,sk):
 		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -164,6 +164,44 @@ class Server:
 		tmp10=bytearray(h2.digest())
 		return self.authenticate(sk)
 
+	def revoke_sc(self,sc,id_u,id_s):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		sock.bind((host,port))
+		sock.listen(1)
+		conn,addr=sock.accept()
+		id_u_recvd=conn.recv(1024)
+		conn.close()
+		sock.close()
+		id_u_recvd=bytearray(id_u)
+		if id_u_recvd==id_u:
+			ci=bytearray(os.urandom(32))
+			n0=bytearray(os.urandom(32))
+			id=bytearray()
+			for i in range(32):
+				id.append(id_u[i]|id_s[i]|ci[i])
+			tmp1=bytearray()
+			for i in range(32):
+				tmp1.append(id[i]|n0[i])		
+			did=encrypt(bytes(tmp1))
+			did=bytearray(did)	
+			tmp2=bytearray()
+			for i in range(32):
+				tmp2.append(id[i]|x[i])	
+			h1.update(bytes(tmp2))
+			v0=bytearray(h1.digest())
+			sc.did=did
+			sc.v0=v0
+			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			sock.connect((host,port))
+			sock.send(pickle.dumps(sc))
+			sock.close()
+			id=tuple(id)
+			reg_table[id]=[ci,0]
+			id=bytearray(id)
+		else:
+			print("User not registered")
+			sys.exit(1)	
+
 if __name__=="__main__":
 	server=Server()
 	sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -172,7 +210,7 @@ if __name__=="__main__":
 	conn,addr=sock.accept()
 	id_u=conn.recv(1024)
 	id_u=bytearray(id_u)
-	(did,v0,tmp1,id)=server.register(id_u)
+	(did,v0,tmp1,id,id_s)=server.register(id_u)
 	id=tuple(id)
 	sc=SmartCard(did,v0)
 	conn.send(pickle.dumps(sc))
@@ -181,3 +219,4 @@ if __name__=="__main__":
 	ctr=0
 	while (ctr<sc.n) and (not server.login(sc,tmp1,id,v0,id_u)):
 		ctr=ctr+1
+	server.revoke_sc(sc,id_u,id_s)	

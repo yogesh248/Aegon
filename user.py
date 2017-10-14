@@ -164,6 +164,40 @@ class User:
 			sock.close()
 			self.authenticate(sc,sk,pd)
 
+	def change_password(self,sc,v0,pd):
+		self.login(sc,v0,pd)
+		print("Enter the new password:")
+		pw_new=input()
+		pw_new=bytearray(pw_new.encode())
+		h1.update(pw_new)
+		tmp1=bytearray(h1.digest())
+		h1.update(pd)
+		tmp2=bytearray(h1.digest())
+		tmp3=bytearray()
+		for i in range(32):
+			tmp3.append(tmp1[i]^tmp2[i])
+		v=sc.v0	
+		tmp4=bytearray()
+		for i in range(32):
+			tmp4.append(tmp3[i]^v[i])
+		sc.v0=tmp4		
+		print("Password successfully changed")
+
+	def revoke_sc(self,sc):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		sock.connect((server,port))
+		sock.send(self.id_u)
+		sock.close()
+		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		sock.bind((server,port))
+		sock.listen(1)
+		conn,addr=sock.accept()
+		data=conn.recv(1024)
+		sc=pickle.loads(data)
+		conn.close()
+		sock.close()
+		return sc
+
 if __name__=="__main__":
 	user=User()
 	sc=SmartCard()
@@ -181,6 +215,10 @@ if __name__=="__main__":
 			print("User has been registered"+"\n")
 		elif ch==2:	
 			user.login(sc,v0,pw)
+		elif ch==3:
+			user.change_password(sc,v0,pw)	
+		elif ch==4:
+			sc=user.revoke_sc(sc)	
 		else:
 			break	
 

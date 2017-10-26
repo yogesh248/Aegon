@@ -77,7 +77,7 @@ class Server:
 		conn.close()
 		sock.close()
 		if flg=='1':
-			print("The session key is {0}".format(sk))
+			print("The session key is {0}\n".format(sk))
 			return 1
 		else:
 			reg_table[id][1]=reg_table[id][1]+1		
@@ -157,7 +157,6 @@ class Server:
 			sock.send(d)
 			sock.send(t2)
 			lbw=lbw+(32*4)
-			pbw=pbw+(32*4)
 			sock.close()
 		else:
 			print("Aborting")
@@ -254,31 +253,29 @@ if __name__=="__main__":
 			while (ctr<sc.n) and (not server.login(sc,tmp1,id,v0,id_u)):
 				ctr=ctr+1
 		elif c=='3':	
-			ctr=0
-			while (ctr<sc.n) and (not server.login(sc,tmp1,id,v0,id_u)):
-				ctr=ctr+1		
+			continue		
 		elif c=='4':		
 			server.revoke_sc(sc,id_u,id_s)	
 		else:
 			break
 
-	rdelay=rt/rctr
-	ldelay=lt/lctr
-	pdelay=ldelay
-	sdelay=st/sctr			
+	rdelay=(rt/rctr)*2
+	ldelay=(lt/lctr)*2
+	pdelay=(ldelay)*2
+	sdelay=(st/sctr)*2				
 	print("\nExecution time:\n")
 	print("Registration phase: {0}".format(rdelay))
 	print("Login phase: {0}".format(ldelay))
 	print("Password change phase: {0}".format(pdelay))
 	print("Smart card revocation phase: {0}\n".format(sdelay))
-	print("Total execution time: {0}\n".format(rdelay+ldelay+pdelay+sdelay))				
+	print("Total execution time: {0} ms\n".format((rdelay+ldelay+pdelay+sdelay)*1000*2))				
 	rbytes=rbw/rctr
 	lbytes=lbw/rctr
 	pbytes=pbw/rctr			
 	sbytes=sbw/rctr
-	print("Bytes sent:\n")
+	print("Bits sent:\n")
 	print("Registration phase: {0}".format(rbytes))
 	print("Login phase: {0}".format(lbytes))
 	print("Password change phase: {0}".format(pbytes))
 	print("Smart card revocation phase: {0}\n".format(sbytes))
-	print("Total no. of bytes sent: {0}\n".format(rbytes+lbytes+pbytes+sbytes))	
+	print("Total no. of bits sent: {0}\n".format((rbytes+lbytes+pbytes+sbytes)*2))	

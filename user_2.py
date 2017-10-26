@@ -120,7 +120,6 @@ class User:
 			sock.send(g)
 			sock.close()
 			lbw=lbw+(32*4)
-			pbw=pbw+(32*4)
 			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			sock.bind((server,port))
 			sock.listen(1)
@@ -181,12 +180,10 @@ class User:
 			sock.send(sk)
 			sock.close()
 			lbw=lbw+(32*2)
-			pbw=pbw+(32*2)
 			self.authenticate(sc,sk,pd)
 
 	def change_password(self,sc,v0,pd):
 		global pt,pctr
-		self.login(sc,v0,pd)
 		print("Enter the new password:")
 		pw_new=input()
 		p_start=time.clock()
@@ -280,24 +277,24 @@ if __name__=="__main__":
 			sock.send(c.encode())
 			sock.close()
 			break
-	rdelay=rt/rctr
-	ldelay=lt/lctr
-	pdelay=pt/pctr
-	sdelay=st/sctr			
+	rdelay=(rt/rctr)*2
+	ldelay=(lt/lctr)*2
+	pdelay=(pt/pctr)*2
+	sdelay=(st/sctr)*2	
 	print("\nExecution time:\n")
 	print("Registration phase: {0}".format(rdelay))
 	print("Login phase: {0}".format(ldelay))
 	print("Password change phase: {0}".format(pdelay))
 	print("Smart card revocation phase: {0}\n".format(sdelay))
-	print("Total execution time: {0}\n".format(rdelay+ldelay+pdelay+sdelay))
+	print("Total execution time: {0} ms\n".format((rdelay+ldelay+pdelay+sdelay)*1000*2))
 	rbytes=rbw/rctr
 	lbytes=lbw/rctr
 	pbytes=pbw/rctr			
 	sbytes=sbw/rctr
-	print("Bytes sent:\n")
+	print("Bits sent:\n")
 	print("Registration phase: {0}".format(rbytes))
 	print("Login phase: {0}".format(lbytes))
 	print("Password change phase: {0}".format(pbytes))
 	print("Smart card revocation phase: {0}\n".format(sbytes))
-	print("Total no. of bytes sent: {0}\n".format(rbytes+lbytes+pbytes+sbytes))		
+	print("Total no. of bits sent: {0}\n".format((rbytes+lbytes+pbytes+sbytes)*2))		
 			

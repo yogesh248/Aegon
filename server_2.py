@@ -14,8 +14,6 @@ iv=os.urandom(16)
 h1=SHA256.new()
 h2=SHA256.new()
 h2_dash=SHA256.new()
-rt,rctr,lt,lctr,pt,pctr,st,sctr=0,0,0,0,0,0,0,0
-rbw,lbw,pbw,sbw=0,0,0,0
 reg_table={}
 
 def encrypt(msg):
@@ -42,8 +40,6 @@ class Server:
 		pass
 
 	def register(self,id_u):
-		global rt,rctr
-		r_start=time.clock()
 		id_s=bytearray(os.urandom(32))
 		ci=bytearray(os.urandom(32))
 		n0=bytearray(os.urandom(32))
@@ -63,9 +59,6 @@ class Server:
 		id=tuple(id)
 		reg_table[id]=[ci,0]
 		id=bytearray(id)
-		r_end=time.clock()
-		rt=rt+(r_end-r_start)
-		rctr=rctr+1
 		return (did,v0,tmp1,id,id_s)
 
 	def authenticate(self,sk):
@@ -84,7 +77,6 @@ class Server:
 			return 0
 
 	def login(self,sc,tmp1,id,v0,id_u):
-		global lt,lctr,lbw,pbw
 		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		sock.bind((host,port))
 		sock.listen(1)
@@ -95,7 +87,6 @@ class Server:
 		g=conn.recv(32)
 		conn.close()
 		sock.close()
-		l_start=time.clock()	
 		t2=bytearray(struct.pack(">i",int(time.time())))
 		fresh=1
 		for i in range(28):
@@ -148,15 +139,12 @@ class Server:
 			h2.update(tmp8)
 			v3=h2.digest()
 			v3=bytearray(v3)
-			l_end=time.clock()
-			lt=lt+(l_end-l_start)
 			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			sock.connect((host,port))
 			sock.send(v2)
 			sock.send(v3)
 			sock.send(d)
 			sock.send(t2)
-			lbw=lbw+(32*4)
 			sock.close()
 		else:
 			print("Aborting")
@@ -169,19 +157,14 @@ class Server:
 		sk=conn.recv(32)
 		conn.close()
 		sock.close()
-		l_start=time.clock()
 		tmp9=bytearray()
 		for i in range(32):
 			tmp9.append(v1[i]|c[i])
 		h2.update(tmp9)
 		tmp10=bytearray(h2.digest())
-		l_end=time.clock()
-		lt=lt+(l_end-l_start)
-		lctr=lctr+1
 		return self.authenticate(sk)
 
 	def revoke_sc(self,sc,id_u,id_s):
-		global st,sctr,sbw
 		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		sock.bind((host,port))
 		sock.listen(1)
@@ -191,7 +174,6 @@ class Server:
 		sock.close()
 		id_u_recvd=bytearray(id_u)
 		if id_u_recvd==id_u:
-			s_start=time.clock()
 			ci=bytearray(os.urandom(32))
 			n0=bytearray(os.urandom(32))
 			id=bytearray()
@@ -209,14 +191,10 @@ class Server:
 			v0=bytearray(h1.digest())
 			sc.did=did
 			sc.v0=v0
-			s_end=time.clock()
-			st=st+(s_end-s_start)
-			sctr=sctr+1
 			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			sock.connect((host,port))
 			sock.send(pickle.dumps(sc))
 			sock.close()
-			sbw=sbw+56
 			id=tuple(id)
 			reg_table[id]=[ci,0]
 			id=bytearray(id)
@@ -247,35 +225,15 @@ if __name__=="__main__":
 			conn.send(pickle.dumps(sc))
 			conn.close()
 			sock.close()
-			rbw=rbw+56
 		elif c=='2':	
 			ctr=0
 			while (ctr<sc.n) and (not server.login(sc,tmp1,id,v0,id_u)):
 				ctr=ctr+1
 		elif c=='3':	
-			continue		
+			ctr=0
+			while (ctr<sc.n) and (not server.login(sc,tmp1,id,v0,id_u)):
+				ctr=ctr+1		
 		elif c=='4':		
 			server.revoke_sc(sc,id_u,id_s)	
 		else:
 			break
-
-	rdelay=(rt/rctr)*2
-	ldelay=(lt/lctr)*2
-	pdelay=(ldelay)*2
-	sdelay=(st/sctr)*2				
-	print("\nExecution time:\n")
-	print("Registration phase: {0}".format(rdelay))
-	print("Login phase: {0}".format(ldelay))
-	print("Password change phase: {0}".format(pdelay))
-	print("Smart card revocation phase: {0}\n".format(sdelay))
-	print("Total execution time: {0} ms\n".format((rdelay+ldelay+pdelay+sdelay)*1000*2))				
-	rbytes=rbw/rctr
-	lbytes=lbw/rctr
-	pbytes=pbw/rctr			
-	sbytes=sbw/rctr
-	print("Bits sent:\n")
-	print("Registration phase: {0}".format(rbytes))
-	print("Login phase: {0}".format(lbytes))
-	print("Password change phase: {0}".format(pbytes))
-	print("Smart card revocation phase: {0}\n".format(sbytes))
-	print("Total no. of bits sent: {0}\n".format((rbytes+lbytes+pbytes+sbytes)*2))	

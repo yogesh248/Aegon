@@ -13,8 +13,6 @@ server='localhost'
 h1=SHA256.new()
 h2=SHA256.new()
 h2_dash=SHA256.new()
-rt,rctr,lt,lctr,pt,pctr,st,sctr=0,0,0,0,0,0,0,0
-rbw,lbw,pbw,sbw=0,0,0,0
 
 class SmartCard:
 	def __init__(self,did=None,v0=None,ctr_sc=0,n=3):
@@ -30,11 +28,9 @@ class User:
 		self.id_u=bytearray(os.urandom(32))
 
 	def register(self):
-		global rt,rbw,rctr
 		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		sock.connect((server,port))
 		sock.send(self.id_u)
-		rbw=rbw+32
 		sc=SmartCard()
 		data=sock.recv(1024)
 		sc=pickle.loads(data)
@@ -54,9 +50,6 @@ class User:
 		sc.ctr_sc=0
 		sc.n=3
 		sock.close()
-		r_end=time.clock()
-		rt=rt+(r_end-r_start)
-		rctr=rctr+1
 		return sc,v0,pw
 
 	def authenticate(self,sc,sk,pd):
@@ -88,9 +81,7 @@ class User:
 				print("\n")				
 
 	def login(self,sc,v0,pd):
-		global lt,lctr,lbw,pbw
 		if sc.ctr_sc<sc.n:
-			l_start=time.clock()
 			r=bytearray(os.urandom(32))
 			g=bytearray(os.urandom(32))
 			e=bytearray()
@@ -110,8 +101,6 @@ class User:
 			v1=bytearray()
 			for i in range(32):
 				v1.append((tmp3[i]+e[i])%256)
-			l_end=time.clock()
-			lt=lt+(l_end-l_start)	
 			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			sock.connect((server,port))
 			sock.send(v1)
@@ -119,8 +108,6 @@ class User:
 			sock.send(t1)
 			sock.send(g)
 			sock.close()
-			lbw=lbw+(32*4)
-			pbw=pbw+(32*4)
 			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			sock.bind((server,port))
 			sock.listen(1)
@@ -131,7 +118,6 @@ class User:
 			t2=conn.recv(32)
 			conn.close()
 			sock.close()
-			l_start=time.clock()
 			v2=bytearray(v2)
 			v3=bytearray(v3)
 			d=bytearray(d)
@@ -172,24 +158,17 @@ class User:
 				tmp7.append(c[i]|d[i]|e[i])
 			h2.update(tmp7)
 			sk=h2.digest()
-			l_end=time.clock()
-			lt=lt+(l_end-l_start)
-			lctr=lctr+1			
 			sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			sock.connect((server,port))
 			sock.send(v4)
 			sock.send(sk)
 			sock.close()
-			lbw=lbw+(32*2)
-			pbw=pbw+(32*2)
 			self.authenticate(sc,sk,pd)
 
 	def change_password(self,sc,v0,pd):
-		global pt,pctr
 		self.login(sc,v0,pd)
 		print("Enter the new password:")
 		pw_new=input()
-		p_start=time.clock()
 		pw_new=bytearray(pw_new.encode())
 		for i in range(24):
 			pw_new.append(0)
@@ -206,18 +185,13 @@ class User:
 			tmp4.append(tmp3[i]^v[i])
 		sc.v0=tmp4		
 		print("Password successfully changed")
-		p_end=time.clock()
-		pt=pt+(p_end-p_start)
-		pctr=pctr+1
 		return pw_new
 
 	def revoke_sc(self,sc):
-		global st,sbw,sctr
 		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		sock.connect((server,port))
 		sock.send(self.id_u)
 		sock.close()
-		sbw=sbw+32
 		sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		sock.bind((server,port))
 		sock.listen(1)
@@ -226,7 +200,6 @@ class User:
 		sc=pickle.loads(data)
 		conn.close()
 		sock.close()
-		sctr=sctr+1
 		return sc
 
 if __name__=="__main__":
@@ -280,24 +253,4 @@ if __name__=="__main__":
 			sock.send(c.encode())
 			sock.close()
 			break
-	rdelay=(rt/rctr)*2
-	ldelay=(lt/lctr)*2
-	pdelay=(pt/pctr)*2
-	sdelay=(st/sctr)*2			
-	print("\nExecution time:\n")
-	print("Registration phase: {0}".format(rdelay))
-	print("Login phase: {0}".format(ldelay))
-	print("Password change phase: {0}".format(pdelay))
-	print("Smart card revocation phase: {0}\n".format(sdelay))
-	print("Total execution time: {0} ms\n".format((rdelay+ldelay+pdelay+sdelay)*1000*2))
-	rbytes=(rbw/rctr)-32
-	lbytes=(lbw/rctr)-32
-	pbytes=(pbw/rctr)-32			
-	sbytes=(sbw/rctr)-32
-	print("Bits sent:\n")
-	print("Registration phase: {0}".format(rbytes))
-	print("Login phase: {0}".format(lbytes))
-	print("Password change phase: {0}".format(pbytes))
-	print("Smart card revocation phase: {0}\n".format(sbytes))
-	print("Total no. of bits sent: {0}\n".format((rbytes+lbytes+pbytes+sbytes)))		
-			
+	
